@@ -1,0 +1,17 @@
+diff --git a/stan/math/rev/fun/Eigen_NumTraits.hpp b/stan/math/rev/fun/Eigen_NumTraits.hpp
+index 79fbead7c8..6f8f957f15 100644
+--- a/stan/math/rev/fun/Eigen_NumTraits.hpp
++++ b/stan/math/rev/fun/Eigen_NumTraits.hpp
+@@ -194,10 +194,10 @@ struct general_matrix_vector_product<Index, stan::math::var, LhsMapper,
+ };
+ 
+ template <typename Index, int LhsStorageOrder, bool ConjugateLhs,
+-          int RhsStorageOrder, bool ConjugateRhs>
++          int RhsStorageOrder, bool ConjugateRhs, int ResInnerStride>
+ struct general_matrix_matrix_product<Index, stan::math::var, LhsStorageOrder,
+                                      ConjugateLhs, stan::math::var,
+-                                     RhsStorageOrder, ConjugateRhs, ColMajor> {
++                                     RhsStorageOrder, ConjugateRhs, ColMajor, ResInnerStride> {
+   using LhsScalar = stan::math::var;
+   using RhsScalar = stan::math::var;
+   using ResScalar = stan::math::var;
