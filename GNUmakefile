@@ -38,6 +38,8 @@ endif
 # set project name to be name of current working directory
 #PROJECT := $(notdir $(shell pwd))
 PROJECT := bayesian-uq
+MAKEFILEPATH := $(abspath $(lastword $(MAKEFILE_LIST)))
+PROJECTPATH := $(dir $(MAKEFILEPATH))
 
 # PROJECTROOT should point at the top-level "engine" directory
 # of a checked-out copy of the the engine.
@@ -144,6 +146,16 @@ $(COMPILERINC) :
 	$(error Is settings of CCOMPILER as expected? $(COMPILERINC) does not exist)
 
 ##################################################
+# settings for scalar (AD) types and seed for Stan RNG
+
+# default is to use dco types
+scalar_type := dco
+dco_version := dcl6i34ngl
+
+stan_seed := 1736
+stan_num_samples := 1000
+
+##################################################
 # Load personal settings (location of the libraries to link to etc.)
 
 ifndef USERINC
@@ -155,6 +167,9 @@ ifndef USERINC
 endif
 
 include $(USERINC)
+STAN_USER_HEADER := stan/spec-fun.hpp
+USER_CINC := $(USER_CINC) -I$(EIGENDIR) -I$(DCOINCDIR) -I$(FFTWINCDIR)
+USER_LIBS := $(USER_LIBS) $(FFTWLIB) $(DCOLIB)
 
 $(USERINC) :
 	$(error Is settings of INC as expected? $(USERINC) does not exist)
@@ -162,15 +177,13 @@ $(USERINC) :
 ##################################################
 # Set user defines e.g., USE_DCO_TYPES
 
-# default is to use dco types
-scalar_type := dco
-
 ifeq ($(scalar_type),basic)
   USER_DEF := $(USER_DEF) -DUSE_BASIC_TYPES
 endif
 
 ifeq ($(scalar_type),dco)
-  USER_DEF := $(USER_DEF) -DUSE_DCO_TYPES
+#  USER_DEF := $(USER_DEF) -DUSE_DCO_TYPES -DDCO_DISABLE_AUTO_WARNING -DDCO_DISABLE_AVX2_WARNING -march=native
+  USER_DEF := $(USER_DEF) -DUSE_DCO_TYPES -DDCO_DISABLE_AUTO_WARNING -DDCO_DISABLE_AVX2_WARNING
 endif
 
 
@@ -256,20 +269,33 @@ TESTDATA := $(TESTSRCDIR)/data
 
 ##### BUILD DIRECTORIES #####
 
-# A directory to hold compiled common objects
-OBJDIR       := $(BUILDDIR)/OBJECTS_$(scalar_type)
+ifeq ($(scalar_type),basic)
+  # A directory to hold compiled common objects
+  OBJDIR       := $(BUILDDIR)/OBJECTS_$(scalar_type)
+  # A directory to hold the libraries
+  LIB_DIR := $(BUILDDIR)/LIBS_$(scalar_type)
+  # compiled tests dirs
+  TEST_BUILD_DIR := $(BUILDDIR)/examples_$(scalar_type)
+  # compiled Stan executable
+  STANEXEDIR := ./stan/build_$(scalar_type)
+endif
 
-# A directory to hold the libraries
-LIB_DIR := $(BUILDDIR)/LIBS_$(scalar_type)
+ifeq ($(scalar_type),dco)
+  # A directory to hold compiled common objects
+  OBJDIR       := $(BUILDDIR)/OBJECTS_$(scalar_type)_$(dco_version)
+  # A directory to hold the libraries
+  LIB_DIR := $(BUILDDIR)/LIBS_$(scalar_type)_$(dco_version)
+  # compiled tests dirs
+  TEST_BUILD_DIR := $(BUILDDIR)/examples_$(scalar_type)_$(dco_version)
+  # compiled Stan executable
+  STANEXEDIR := ./stan/build_$(scalar_type)_$(dco_version)
+endif
 
-# compiled tests dirs
-TEST_BUILD_DIR := $(BUILDDIR)/examples_$(scalar_type)
 TESTOBJDIR := $(TEST_BUILD_DIR)/OBJECTS
 TESTEXEDIR := $(TEST_BUILD_DIR)/EXECUTABLES
 TESTRESDIR := $(TEST_BUILD_DIR)/results
 TESTDIFFDIR := $(TEST_BUILD_DIR)/diffs
 
-STANEXEDIR := $(PROJECTROOT)/stan/build_$(scalar_type)
 
 # ======================================================================
 # Special files named and other derivatives
@@ -427,8 +453,8 @@ $(STAN_EXES): $(FULLLIBMAIN)
 $(STAN_EXES): $(STANEXEDIR)/%.exe : $(STANSRCDIR)/%.stan
 	$(RM) $(PROJECTROOT)/$(STANSRCDIR)/$(basename $@)
 	cd ${STANDIR} && \
-		EIGEN=$(EIGENDIR) CXXFLAGS="-I$(DCODIR) -I$(PROJECTPATH)/include/ $(USER_DEF)" \
-		LDLIBS=$(PROJECTPATH)/$(FULLLIBMAIN) \
+		EIGEN=$(EIGENDIR) CXXFLAGS="-I$(DCOINCDIR) -I$(PROJECTPATH)/include $(USER_DEF)" \
+		LDLIBS="$(PROJECTPATH)/$(FULLLIBMAIN) $(DCOLIB)" \
 		$(MAKE) $(PROJECTPATH)/$(STANSRCDIR)/$(notdir $(basename $@)) STANCFLAGS="--allow_undefined" \
 			USER_HEADER=$(PROJECTPATH)/$(STAN_USER_HEADER)
 	$(QUIET) $(MKDIR) $(STANEXEDIR)
@@ -438,6 +464,7 @@ $(STAN_EXES): $(STANEXEDIR)/%.exe : $(STANSRCDIR)/%.stan
 
 clean:
 	$(RMDIR) $(BUILDDIR)
+	$(RMDIR) $(STANEXEDIR)
 
 cleanexe:
 	$(RMDIR) $(TESTEXEDIR)
@@ -464,28 +491,35 @@ stan_patch:
 
 STANRESDIR := stan/results_$(scalar_type)
 
-$(STANRESDIR)/spectral-inference_output.csv: $(STAN_EXES)
+$(STANRESDIR)/spectral-inference_samples.csv: $(STAN_EXES)
 
-$(STANRESDIR)/spectral-inference_output.csv: $(STANEXEDIR)/spectral-inference.exe
+$(STANRESDIR)/spectral-inference_samples.csv: $(STANEXEDIR)/spectral-inference.exe
 	$(QUIET) $(MKDIR) $(STANRESDIR)
-	$(STANEXEDIR)/spectral-inference.exe sample data file=stan/spectral-inference.data.R \
+	$(STANEXEDIR)/spectral-inference.exe sample num_samples=$(stan_num_samples) \
+		data file=stan/spectral-inference.data.R \
+		random seed=$(stan_seed) \
 		output file=$@
 
 stan_tools:
 	cd ${STANDIR} && \
 		$(MAKE) build
 
-stansummary_nuts : stan_tools $(STANRESDIR)/spectral-inference_output.csv
+stansummary_nuts : stan_tools $(STANRESDIR)/spectral-inference_samples.csv
 
 stansummary_nuts :
-	${STANDIR}/bin/stansummary $(STANRESDIR)/spectral-inference_output.csv
+	$(RM) $(STANRESDIR)/spectral-inference_summary.csv
+	${STANDIR}/bin/stansummary --csv_file=$(STANRESDIR)/spectral-inference_summary.csv $(STANRESDIR)/spectral-inference_samples.csv
+	python tabulate_stansummary.py $(STANRESDIR)/spectral-inference_summary.csv
 
 examples/samples/harmonic-oscillator/output_$(scalar_type).csv: $(TEST_EXES)
 	$(QUIET) $(MKDIR) examples/samples/harmonic-oscillator
-	time BUILD_bayesian-uq_linux_gcc_64/examples_$(scalar_type)/EXECUTABLES/smMALA-harmonic-oscillator.exe
+	time $(TEST_BUILD_DIR)/EXECUTABLES/smMALA-harmonic-oscillator.exe
 
-pysummary_smMALA : examples/samples/harmonic-oscillator/output_$(scalar_type).csv
-	python quantiles.py examples/samples/harmonic-oscillator/output_$(scalar_type).csv
+stansummary_smMALA : examples/samples/harmonic-oscillator/output_$(scalar_type).csv
+	$(RM) examples/samples/harmonic-oscillator/summary_$(scalar_type).csv
+	${STANDIR}/bin/stansummary --csv_file=examples/samples/harmonic-oscillator/summary_$(scalar_type).csv \
+                                        examples/samples/harmonic-oscillator/output_$(scalar_type).csv
+	python tabulate_stansummary.py examples/samples/harmonic-oscillator/summary_$(scalar_type).csv
 
 #	Rule to allow executable files to be specified without directory
 $(notdir $(TEST_EXES)) : %.exe : $(TESTEXEDIR)/%.exe

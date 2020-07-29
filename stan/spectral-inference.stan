@@ -12,12 +12,18 @@ data {
   vector[M] y2;           // periodogram / observations
   // means and standard deviations of prior parameters
   int<lower=1> K;
-  vector[K] m_theta;
-  vector[K] s_theta;
 }
 
 parameters {
   vector[K] theta;
+}
+
+transformed parameters {
+  real omega0_c1 = exp(theta[1]);
+  real omega0_c2 = exp(theta[2]);
+  real sd_in_c1 = exp(theta[3]);
+  real sd_in_c2 = exp(theta[4]);
+  real zeta = exp(theta[5]);
 }
 
 model {
@@ -32,10 +38,5 @@ model {
   spec2 = spec_fun(p, theta, 2);
   for (m in 1:M){
     y2[m] ~ exponential( 1 / spec2[m]);
-  }
-
-  // Prior
-  for (k in 1:K){
-    theta[k] ~ normal(m_theta[k], s_theta[k]);
   }
 }

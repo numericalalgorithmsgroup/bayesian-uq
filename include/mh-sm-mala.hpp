@@ -24,6 +24,7 @@ public:
   Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic> hess_to_prec(const Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic> & hess0);
   std::string report(const unsigned int & ifail) const;
   int get_n_acc() const { return n_acc; };
+  SCALAR_T get_lt0() const { return lt0; };
 protected:
   unsigned int ifail = 0;
   Computation<SCALAR_T> & computation;

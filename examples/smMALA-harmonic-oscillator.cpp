@@ -4,6 +4,7 @@
 #include <iostream>
 #include <random>
 #include <float.h>
+#include <ctime>
 
 #include "Eigen/Dense"
 #include "scalar-typedef.hpp"
@@ -67,12 +68,21 @@ void whittle_mcmc_harmonic_oscillator()
   ofstream ofs("examples/samples/harmonic-oscillator/output_dco.csv" );
 #endif
 
+  // Record time
+  clock_t begin = clock();
+
+  // MCMC sampling
   cout << sampler_smMALA << endl;
-  ofs << "omega0_c1,omega0_c2,sd_in_c1,sd_in_c2,zeta" << endl;
+  ofs << "#     algorithm = lmc" << endl;
+  ofs << "#       lmc" << endl;
+  ofs << "#         engine = smmala" << endl;
+
+  ofs << "lp__,omega0_c1,omega0_c2,sd_in_c1,sd_in_c2,zeta" << endl;
 
   int n_iter = 1000;
   int n_stride = 100;
   for (int i=0; i < n_iter; ++i){
+    ofs << sampler_smMALA.get_lt0() << ",";
     for (int j=0; j < (theta0.size()-1); ++j){
       ofs << exp( theta0(j) ) << "," ;
     }
@@ -86,6 +96,15 @@ void whittle_mcmc_harmonic_oscillator()
   cout << endl;
   cout << "Acceptance rate : " << (double)sampler_smMALA.get_n_acc() / (double)n_iter << endl;
   cout << endl;
+
+  // record time and evaluate time elapsed
+  clock_t end = clock();
+  double elapsed_secs = double(end - begin) / CLOCKS_PER_SEC;
+
+  ofs << "#" << endl;
+  ofs << "#  Elapsed Time: " << 0.0 << " seconds (Warm-up)" << endl;
+  ofs << "#                " << elapsed_secs << " seconds (Sampling)" << endl;
+  ofs << "#" << endl;
 }
 
 int main()

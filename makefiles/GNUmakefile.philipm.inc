@@ -1,6 +1,3 @@
-
-# Must be set by user
-
 ifeq ($(machine),LAPTOP-HOH0NDO7)
   INSTALLDIR := /mnt/c/Users/Philip
   STANDIR  := $(INSTALLDIR)/stan-dev/cmdstan
@@ -11,13 +8,19 @@ else ifeq ($(machine),oban)
   STANDIR  := $(INSTALLDIR)/cmdstan-2.23.0
 endif
 
-EIGENDIR := $(INSTALLDIR)/eigen-ad
-DCODIR   := $(INSTALLDIR)/dco_cpp_dev/src
-FFTWDIR  := $(INSTALLDIR)/fftw-3.3.8
+EIGENDIR  := $(INSTALLDIR)/eigen-ad
+FFTWINCDIR:= $(INSTALLDIR)/fftw-3.3.8/api
+FFTWLIB   := $(INSTALLDIR)/fftw-3.3.8/.libs/libfftw3.a
 STAN_USER_HEADER := stan/spec-fun.hpp
 
-PROJECTPATH := $(INSTALLDIR)/$(PROJECT)
-USER_CINC := $(USER_CINC) -I$(EIGENDIR) -I$(DCODIR) -I$(FFTWDIR)/api
-# USER_CINC := $(USER_CINC) -I$(EIGENDIR) -I$(FFTWDIR)/api
-# USER_LIBS := $(USER_LIBS) $(FFTWDIR)/.libs/libfftw3.a $(DCODIR)/libdco.a
-USER_LIBS := $(USER_LIBS) $(FFTWDIR)/.libs/libfftw3.a
+ifeq ($(dco_version), dcl6i34ngl)
+  DCODIR   := /home/philipm/NAG/dcl6i34ngl
+  DCOINCDIR := $(DCODIR)/include
+  DCOLIB := $(DCODIR)/lib/libdcoc.a
+endif
+
+ifeq ($(dco_version), develop)
+  DCODIR   := $(INSTALLDIR)/dco_cpp_dev/src
+  DCOINCDIR := $(DCODIR)
+  DCOLIB :=
+endif
