@@ -154,6 +154,7 @@ dco_version := dcl6i34ngl
 
 stan_seed := 1736
 stan_num_samples := 1000
+finite_difference_type := cfd
 
 ##################################################
 # Load personal settings (location of the libraries to link to etc.)
@@ -179,6 +180,14 @@ $(USERINC) :
 
 ifeq ($(scalar_type),basic)
   USER_DEF := $(USER_DEF) -DUSE_BASIC_TYPES
+endif
+
+ifeq ($(finite_difference_type),cfd)
+  USER_DEF := $(USER_DEF) -DUSE_CFD
+endif
+
+ifeq ($(finite_difference_type),ffd)
+  USER_DEF := $(USER_DEF) -DUSE_FFD
 endif
 
 ifeq ($(scalar_type),dco)
@@ -483,13 +492,18 @@ cleanall: clean
 # shortcuts
 all: $(FULLLIBMAIN) $(TEST_EXES)
 
+STANRESDIR := stan/results_$(scalar_type)
+
+clean-stan:
+	$(RMDIR) $(STANRESDIR)
+	$(RMDIR) $(STANEXEDIR)
+
 results: $(TEST_RES)
 
 # hard-coded recipes for Stan patch, sampling and results analysis
 stan_patch:
 	patch $(STANDIR)/stan/lib/stan_math/stan/math/rev/fun/Eigen_NumTraits.hpp stan_math_eigen.patch
 
-STANRESDIR := stan/results_$(scalar_type)
 
 $(STANRESDIR)/spectral-inference_samples.csv: $(STAN_EXES)
 
@@ -501,7 +515,7 @@ $(STANRESDIR)/spectral-inference_samples.csv: $(STANEXEDIR)/spectral-inference.e
 		output file=$@
 
 stan_tools:
-	cd ${STANDIR} && \
+	cd ${STANDIR} && EIGEN=$(EIGENDIR) \
 		$(MAKE) build
 
 stansummary_nuts : stan_tools $(STANRESDIR)/spectral-inference_samples.csv
@@ -515,7 +529,7 @@ examples/samples/harmonic-oscillator/output_$(scalar_type).csv: $(TEST_EXES)
 	$(QUIET) $(MKDIR) examples/samples/harmonic-oscillator
 	time $(TEST_BUILD_DIR)/EXECUTABLES/smMALA-harmonic-oscillator.exe
 
-stansummary_smMALA : examples/samples/harmonic-oscillator/output_$(scalar_type).csv
+stansummary_smMALA : stan_tools examples/samples/harmonic-oscillator/output_$(scalar_type).csv
 	$(RM) examples/samples/harmonic-oscillator/summary_$(scalar_type).csv
 	${STANDIR}/bin/stansummary --csv_file=examples/samples/harmonic-oscillator/summary_$(scalar_type).csv \
                                         examples/samples/harmonic-oscillator/output_$(scalar_type).csv

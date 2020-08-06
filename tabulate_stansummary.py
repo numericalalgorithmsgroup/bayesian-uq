@@ -23,7 +23,8 @@ def main():
   df = pd.read_csv(name, comment='#', index_col=0)
   df = df[['5%', '50%', '95%', 'N_Eff', 'N_Eff/s']]
   for name in df.index:
-    if name in ['accept_stat__', 'treedepth__', 'n_leapfrog__', 'energy__', 'theta[1]', 'theta[2]', 'theta[3]', 'theta[4]', 'theta[5]']:
+    if name in ['accept_stat__', 'treedepth__', 'stepsize__', 'n_leapfrog__', 'energy__', 'divergent__',
+                'theta[1]', 'theta[2]', 'theta[3]', 'theta[4]', 'theta[5]']:
       df = df.drop([name], axis=0)
   df = df.dropna()
   df['N_Eff'] = df['N_Eff'].astype(int)
