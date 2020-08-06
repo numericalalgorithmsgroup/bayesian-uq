@@ -88,7 +88,6 @@ namespace spectral_inference_model_namespace {
     Eigen::Matrix<double,Eigen::Dynamic,1> a = value_of(x_stan);
     Matrix<double, Dynamic, 1> x0_double = a;
     Matrix<double, Dynamic, 1> spec_dens0 = computation(xf, x0_double, dataset); // Actual computation to be differentiated
-
     const int num_inputs = x0_double.rows();
     int num_outputs = spec_dens0.rows();
     Eigen::Matrix<double,Eigen::Dynamic,1> fa = spec_dens0;
@@ -96,6 +95,7 @@ namespace spectral_inference_model_namespace {
     for(int j=0; j<num_outputs; j++) {
       grad_fa[j].resize(num_inputs);
     }
+#ifdef USE_FFD
     for(int i=0; i<num_inputs; i++) {
       Matrix<double, Dynamic, 1> x_double = x0_double;
       double h = x_double(i,0) == 0.0 ? sqrt(DBL_EPSILON) : sqrt(DBL_EPSILON) * abs( x_double(i,0)  );
@@ -103,7 +103,18 @@ namespace spectral_inference_model_namespace {
       Eigen::Matrix<double,Eigen::Dynamic,1> spec_dens = computation(xf, x_double, dataset); // Actual computation to be differentiated
       for(int j=0; j<num_outputs; j++) grad_fa[j][i] = (spec_dens(j, 0) - spec_dens0(j, 0)) / h;
     }
-
+#endif
+#ifdef USE_CFD
+    for(int i=0; i<num_inputs; i++) {
+      Matrix<double, Dynamic, 1> x_double_p = x0_double, x_double_n = x0_double;
+      double h = x_double_p(i,0) == 0.0 ? sqrt(DBL_EPSILON) : sqrt(DBL_EPSILON) * abs( x_double_p(i,0)  );
+      x_double_p(i,0) += h;
+      x_double_n(i,0) -= h;
+      Eigen::Matrix<double,Eigen::Dynamic,1> spec_dens_p = computation(xf, x_double_p, dataset); // Actual computation to be differentiated
+      Eigen::Matrix<double,Eigen::Dynamic,1> spec_dens_n = computation(xf, x_double_n, dataset);
+      for(int j=0; j<num_outputs; j++) grad_fa[j][i] = (spec_dens_p(j, 0) - spec_dens_n(j, 0)) / (2*h);
+    }
+#endif
     vector<stan::math::var> x_std(x_stan.data(), x_stan.data() + x_stan.rows() * x_stan.cols());
     Eigen::Matrix<stan::math::var,Eigen::Dynamic,1> f_var_jacobian( grad_fa.size() );
     for (int i=0; i < grad_fa.size(); ++i){

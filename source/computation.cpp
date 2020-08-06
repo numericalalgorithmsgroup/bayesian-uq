@@ -86,6 +86,7 @@ SCALAR_T log_whittle_like(Likelihood_mode LikelihoodMode,
   return ll;
 }
 
+#ifdef USE_FFD
 template<>
 Matrix<double, Dynamic, 1> Computation<double>::grad(Matrix<double, Dynamic, 1>& theta0,
                                                      const Eigen::Matrix<double, Eigen::Dynamic, 1>& xstar_c0_in,
@@ -104,6 +105,29 @@ Matrix<double, Dynamic, 1> Computation<double>::grad(Matrix<double, Dynamic, 1>&
   }
   return grad;
 }
+#endif
+
+#ifdef USE_CFD
+template<>
+Matrix<double, Dynamic, 1> Computation<double>::grad(Matrix<double, Dynamic, 1>& theta0,
+                                                     const Eigen::Matrix<double, Eigen::Dynamic, 1>& xstar_c0_in,
+                                                     unsigned int & ifail) {
+  const int n_theta = theta0.size();
+  Matrix<double, Dynamic, 1> grad(n_theta);
+  for (int i=0; i < n_theta; i++){
+    Matrix<double, Dynamic, 1> theta_p = theta0, theta_n = theta0;
+    // if theta(i) is zero, set h to be sqrt of machine precision
+    // otherwise set h to be (sqrt of machine precision) * ( absolute value of theta(i) )
+    double h = theta0(i) == 0.0 ? sqrt(DBL_EPSILON) : sqrt(DBL_EPSILON) * abs( theta0(i)  );
+    theta_p(i) += h;
+    theta_n(i) -= h;
+    double ll_p = eval(theta_p, xstar_c0_in, ifail);
+    double ll_n = eval(theta_n, xstar_c0_in, ifail);
+    grad(i) = (ll_p - ll_n) / (2*h);
+  }
+  return grad;
+}
+#endif
 
 template<>
 Matrix<double, Dynamic, Dynamic> Computation<double>::hess(Matrix<double, Dynamic, 1>& theta0,
