@@ -6,6 +6,8 @@ LNCS, volume 12143, Coputational Science - ICCS 2020, https://doi.org/10.1007/97
 https://arxiv.org/abs/2005.14281
 ```
 
+The code was developed in a Linux environment using the gcc compiler.  It has also been built in a Windows environment using the MSVC cl compiler.  The code tends to compile faster on Linux.  And the Stan examples may not work under MSVC.  On a Windows machine, use of gcc in the Windows Subsystem for Linux environment is recommended.
+
 ## Install dependencies for spectral analysis using smMALA
 
 #### Eigen
@@ -26,7 +28,7 @@ The spectral analysis uses the FFTW library.  Download available from here.
 
 Version 3.4.3 or later is needed.  The latest version of dco/c++ 3.4.x for Linux is available here.
 
-[https://www.nag.com/content/downloads-dco-c-dcl6i34ngl](https://www.nag.com/content/downloads-dco-c-dcl6i33ngl)
+[https://www.nag.com/content/downloads-dco-c-dcl6i34ngl](https://www.nag.com/content/downloads-dco-c-dcl6i34ngl)
 
 The examples that use finite differences instead of AD for derivative computation should still work without dco/c++ installed.
 

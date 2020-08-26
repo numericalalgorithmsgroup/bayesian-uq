@@ -22,7 +22,10 @@ void Computation<gt2s_ga1s_scalar>::derivatives(Matrix<gt2s_ga1s_scalar, Dynamic
   grad.resize(theta_size);
   hess.resize(theta_size,theta_size);
   // Create tape
-  DCO_GT2S_GA1S_MODE::global_tape = DCO_GT2S_GA1S_MODE::tape_t::create();
+  if( DCO_GA1S_MODE::global_tape==nullptr) {
+    DCO_GT2S_GA1S_MODE::global_tape = DCO_GT2S_GA1S_MODE::tape_t::create();
+  }
+  auto pos = DCO_GT2S_GA1S_MODE::global_tape->get_position();
 
   for(int i=0; i<theta_size; i++) {
     // Register inputs
@@ -47,6 +50,8 @@ void Computation<gt2s_ga1s_scalar>::derivatives(Matrix<gt2s_ga1s_scalar, Dynamic
     dco::derivative(dco::value(theta(i))) = 0.0;
     DCO_GT2S_GA1S_MODE::global_tape->reset();
   }
+  DCO_GT2S_GA1S_MODE::global_tape->reset_to( pos );
+  DCO_GT2S_GA1S_MODE::tape_t::remove(DCO_GT2S_GA1S_MODE::global_tape);
   return;
 }
 #endif

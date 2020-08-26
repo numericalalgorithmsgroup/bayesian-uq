@@ -44,6 +44,10 @@ void whittle_mcmc_harmonic_oscillator()
   double alpha = 1e6;
   double h = 1.0;
 
+  printf("\nDCO_MEM_RATIO      = %8.1f\n", DCO_MEM_RATIO);
+  printf("DCO_MAX_ALLOCATION = %8.1e kb\n", DCO_MAX_ALLOCATION);
+  printf("                   = %8.0f mb\n\n", DCO_MAX_ALLOCATION / 1024);
+
 #ifdef USE_BASIC_TYPES
   // read in data
   Data_vector<double> y_light(data_dir + "data1_input.dat");

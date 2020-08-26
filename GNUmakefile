@@ -192,7 +192,8 @@ endif
 
 ifeq ($(scalar_type),dco)
 #  USER_DEF := $(USER_DEF) -DUSE_DCO_TYPES -DDCO_DISABLE_AUTO_WARNING -DDCO_DISABLE_AVX2_WARNING -march=native
-  USER_DEF := $(USER_DEF) -DUSE_DCO_TYPES -DDCO_DISABLE_AUTO_WARNING -DDCO_DISABLE_AVX2_WARNING
+  USER_DEF := $(USER_DEF) -DUSE_DCO_TYPES -DDCO_DISABLE_AUTO_WARNING -DDCO_DISABLE_AVX2_WARNING -DDCO_MAX_ALLOCATION=1e6 -DDCO_MEM_RATIO=0.5
+  USER_LIBS := $(USER_LIBS) $(DCO_LIB)
 endif
 
 
@@ -557,6 +558,7 @@ listmakevars:
 	@echo "(to display full path in the file listings, set LISTINFULL=1)"
 	@echo "-------------------------------------------------------------"
 	@echo "Settings..."
+	@echo "  platos            = $(platos)"
 	@echo "  CCOMPILER         = $(CCOMPILER)"
 	@echo "  CLINK             = $(CLINK)"
 	@echo "  CC                = $(CC)"
@@ -567,6 +569,9 @@ listmakevars:
 	@echo "Dependencies ..."
 	@echo "  BASE_CDEPS        = $(call list,$(BASE_CDEPS))"
 	@echo "  TEST_CDEPS        = $(call list,$(TEST_CDEPS))"
+	@echo "Dirs (deps) ..."
+	@echo "  INSTALLDIR        = $(INSTALLDIR)"
+	@echo "  STANDIR           = $(STANDIR)"
 	@echo "Dirs (sources) ..."
 	@echo "  DEPENDSINC        = $(DEPENDSINC)"
 	@echo "  TESTSRCDIR        = $(TESTSRCDIR)"
