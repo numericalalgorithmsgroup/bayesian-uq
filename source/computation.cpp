@@ -210,81 +210,8 @@ Matrix<double,Dynamic,1> Computation<ga1s_scalar>::grad(Matrix<ga1s_scalar, Dyna
   for (int i=0; i < n_theta; i++){
     grad(i) = dco::value( dco::derivative( theta(i) ) );
   }
-  DCO_GA1S_MODE::global_tape->reset();
+  DCO_GA1S_MODE::tape_t::remove(DCO_GA1S_MODE::global_tape);
   return grad;
-}
-#endif
-
-#undef GRAD_GT2S_GA1S
-#ifdef GRAD_GT2S_GA1S
-template<>
-Matrix<double,Dynamic,1> Computation<Scalar>::grad(Matrix<Scalar, Dynamic, 1>& theta,
-                                                   const Eigen::Matrix<Scalar, Eigen::Dynamic, 1>& x_star,
-                                                   unsigned int & ifail) {
-  const int theta_size = theta.size();
-  Matrix<double, Dynamic, 1> grad(theta_size);
-  // Create tape
-  DCO_MODE::global_tape = DCO_MODE::tape_t::create();
-
-  for(int i=0; i<theta_size; i++) {
-    // Register inputs
-    for(int j=0; j<theta_size; j++) {
-      DCO_MODE::global_tape->register_variable(theta(j));
-    }
-    dco::derivative(dco::value(theta(i))) = 1.0;
-
-    // Actual computation to be differentiated
-    Scalar ll = eval(theta, x_star, ifail);
-
-    DCO_MODE::global_tape->register_output_variable(ll);
-    dco::derivative(ll) = 1.0;
-
-    DCO_MODE::global_tape->interpret_adjoint();
-
-    // Fill Jacobian
-    grad(i) = dco::value(dco::derivative(theta(i)));
-
-    dco::derivative(dco::value(theta(i))) = 0.0;
-    DCO_MODE::global_tape->reset();
-  }
-  return grad;
-}
-#endif
-
-#undef HESS_GT2S_GA1S
-#ifdef HESS_GT2S_GA1S
-template<>
-Matrix<double,Dynamic,Dynamic> Computation<Scalar>::hess(Matrix<Scalar, Dynamic, 1>& theta,
-                                                         const Eigen::Matrix<Scalar, Eigen::Dynamic, 1>& x_star,
-                                                         unsigned int & ifail) {
-  const int theta_size = theta.size();
-  Matrix<double, Dynamic, Dynamic> hess(theta_size,theta_size);
-  // Create tape
-  DCO_MODE::global_tape = DCO_MODE::tape_t::create();
-
-  for(int i=0; i<theta_size; i++) {
-    // Register inputs
-    for(int j=0; j<theta_size; j++) {
-      DCO_MODE::global_tape->register_variable(theta(j));
-    }
-    dco::derivative(dco::value(theta(i))) = 1.0;
-
-    // Actual computation to be differentiated
-    Scalar ll = eval(theta, x_star, ifail);
-
-    DCO_MODE::global_tape->register_output_variable(ll);
-    dco::derivative(ll) = 1.0;
-
-    DCO_MODE::global_tape->interpret_adjoint();
-
-    // Fill Hessian
-    for(int j=0; j<theta_size; j++) hess(j, i) = dco::derivative(dco::derivative(theta(j)));
-
-    dco::derivative(dco::value(theta(i))) = 0.0;
-    DCO_MODE::global_tape->reset();
-  }
-
-  return hess;
 }
 #endif
 
