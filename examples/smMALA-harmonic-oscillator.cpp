@@ -44,10 +44,6 @@ void whittle_mcmc_harmonic_oscillator()
   double alpha = 1e6;
   double h = 1.0;
 
-  printf("\nDCO_MEM_RATIO      = %8.1f\n", DCO_MEM_RATIO);
-  printf("DCO_MAX_ALLOCATION = %8.1e kb\n", DCO_MAX_ALLOCATION);
-  printf("                   = %8.0f mb\n\n", DCO_MAX_ALLOCATION / 1024);
-
 #ifdef USE_BASIC_TYPES
   // read in data
   Data_vector<double> y_light(data_dir + "data1_input.dat");
@@ -60,6 +56,9 @@ void whittle_mcmc_harmonic_oscillator()
   MH_move_smMALA<double> sampler_smMALA(computation, theta0, x_star, seed, alpha, h);
   ofstream ofs("examples/samples/harmonic-oscillator/output_basic.csv" );
 #elif USE_DCO_TYPES
+  printf("\nDCO_MEM_RATIO      = %8.1f\n", DCO_MEM_RATIO);
+  printf("DCO_MAX_ALLOCATION = %8.1e kb\n", DCO_MAX_ALLOCATION);
+  printf("                   = %8.0f mb\n\n", DCO_MAX_ALLOCATION / 1024);
   // read in data
   Data_vector<gt2s_ga1s_scalar> y_light(data_dir + "data1_input.dat");
   Data_vector<gt2s_ga1s_scalar> y_deep(data_dir + "data2_input.dat");
